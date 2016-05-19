@@ -1,0 +1,11 @@
+**/tmp
+**/run
+**/build
+**/.gradle
+**/.idea
+**/.nb-*
+**/*.iml
+**/*.log
+**/generated
+**/.vagrant
+**/nbproject

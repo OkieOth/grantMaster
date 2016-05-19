@@ -1,0 +1,41 @@
+{
+    "realms": [{
+            "name":         "grantMaster",
+            "realmRoles":   ["grantMaster"],
+            "apps":  [{
+                "name": "grantmaster",
+                "redirectUrls": [
+                    "gm/*"],
+                "appRoles": [ "view","edit","admin" ]
+                }],
+            "userGroups": [ {
+                    "name": "GrantMaster user",
+                    "realmRoles":   ["grantMaster"],
+                    "appRoles": [{
+                    "app":  "grantmaster",  
+                    "role": "edit"}]
+                },
+                {
+                    "name": "GrantMaster admin",
+                    "realmRoles":   ["grantMaster"],
+                    "appRoles": [{
+                    "app":  "grantmaster",  
+                    "role": "admin"}]
+                }],
+            "users": [{
+                "login":        "test",
+                "password":     "geheim",
+                "email":        "test@test.com",
+                "name":         "Mein Name",
+                "userGroup":   "GrantMaster user"
+                },
+                {
+                "login":        "test2",
+                "password":     "geheim",
+                "email":        "test@test.com",
+                "name":         "Mein Name2",
+                "userGroup":   "GrantMaster admin"
+                }]
+        }
+    ]   
+}

@@ -1,0 +1,157 @@
+apply plugin: 'java'
+//apply plugin: 'application'
+apply plugin: 'maven-publish'
+
+// // Note: "common.gradle" in the root project contains additional initialization
+//   for this project. This initialization is applied in the "build.gradle"
+//   of the root project.
+
+// NetBeans will automatically add "run" and "debug" tasks relying on the
+// "mainClass" property. You may however define the property prior executing
+// tasks by passing a "-PmainClass=<QUALIFIED_CLASS_NAME>" argument.
+//
+// Note however, that you may define your own "run" and "debug" task if you
+// prefer. In this case NetBeans will not add these tasks but you may rely on
+// your own implementation.
+
+project.group = 'de.oth.grantmaster'
+project.version = '0.1-SNAPSHOT'
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+}
+
+publishing {
+    repositories {
+        maven {
+            url "${System.getenv('HOME')}/myMavenRepos"
+        }
+    }
+}
+
+repositories {
+    maven {
+        url "${System.getenv('HOME')}/myMavenRepos"
+    }
+    mavenCentral()
+}
+
+//apply from: 'src/model/model.gradle'
+
+buildscript {
+    repositories {
+        maven {
+            url "${System.getenv('HOME')}/myMavenRepos"
+        }
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'de.othsoft.codeGen:gradlePlugin:0.1-SNAPSHOT'
+    }
+}
+apply plugin: 'de.othsoft.othcodegen'
+
+import de.othsoft.codeGen.requirements.AttribType
+import de.othsoft.codeGen.types.DataModel 
+
+class GantmasterDbModel extends DataModel {
+    GrantmasterDbModel () {
+        // Der Name des Modell ergibt sich aus dem Namen der Klasse
+        version=1
+        shortName='grantm'
+        
+        defaultTypes=[
+                'name' : AttribType.t_string,
+                'descr' : AttribType.t_string,
+                'id_str' : AttribType.t_string,
+		'aktiv' : AttribType.t_boolean
+                ]
+        
+        entity ( name:'Realm').
+                descr = 'main container that holds all the stuff'
+            attrib ( name:'name')
+        
+        entity ( name:'App' ).
+                descr = 'application that is connected to grantmaster'
+            attrib ( name:'name' )
+            attrib ( name:'descr' )
+            attrib ( name:'aktiv' )
+	    ref ( refName:'Realm' )
+
+	entity ( name:'AppUrl').
+		descr = 'what urls related to the app'
+	    attrib ( name:'url' )
+	    attrib ( name:'descr')
+	    ref ( refName: 'App' )
+	    ref ( refName:'Realm' )
+           
+	entity ( name:'RealmAppRole' ).
+		descr = 'realm role that is related to a app'
+	    attrib ( name:'name' )
+            attrib ( name:'descr' )
+            attrib ( name:'aktiv' )
+	    ref ( refName: 'App' )
+	    ref ( refName:'Realm' )
+
+	entity ( name:'AppRole' ).
+		descr = 'a grant defined in app'
+	    attrib ( name:'name' )
+            attrib ( name:'descr' )
+            attrib ( name:'aktiv' )
+	    ref ( refName:'App' )
+	    ref ( refName:'Realm' )
+
+	entity ( name:'NutzerGruppe' )
+	    attrib ( name:'name' )
+	    attrib ( name:'descr' )
+            attrib ( name:'aktiv' )
+	    ref ( refName:'Realm' )
+
+	entity ( name:'Nutzer' )
+	    attrib ( name:'login' )
+	    attrib ( name:'name', type:AttribType.t_string )
+	    attrib ( name:'email', type:AttribType.t_string )
+            attrib ( name:'aktiv' )
+	    ref ( refName:'Realm' )
+	    ref ( refName:'NutzerGruppe' )
+                               
+        m2nRel ( refName1:'NutzerGruppe', refName2:'AppRole').
+                descr = 'what realm roles are related to a user group'
+    
+        m2nRel ( refName1:'NutzerGruppe', refName2:'AppRole').
+                descr = 'what realm roles are related to a user group'
+       
+        resolveReferences()
+    }
+}
+
+othCodeGen {
+    model = new GrantmasterDbModel()
+    generators = ['db_psql','dao_base','dao_jdbc','model_puml','test_data',
+        new de.othsoft.codeGen.impl.groovy.dao.jdbc.psql.JdbcCreateDbGenerator() ]
+}
+
+
+
+if (!hasProperty('mainClass')) {
+    ext.mainClass = ''
+}
+
+dependencies {
+    // TODO: Add dependencies here
+    //   but note that JUnit should have already been added in parent.gradle.
+    //   By default, only the Maven Central Repository is specified in
+    //   parent.gradle.
+    //
+    // You can read more about how to add dependency here:
+    //   http://www.gradle.org/docs/current/userguide/dependency_management.html#sec:how_to_declare_your_dependencies
+    testCompile 'de.othsoft.codeGen:gCodeGen:0.1-SNAPSHOT'
+    testCompile 'org.codehaus.groovy:groovy-all:2.4.4'
+    compile 'de.othsoft.codeGen:jJdbcDaoRequirements:0.1'
+}
+
+apply from: 'src/integration_test/gradle/integrationTest.gradle'

@@ -1,0 +1,36 @@
+@startuml
+actor "App user" as appUser
+actor admin
+node "keycloak server" as keycloakServer {
+    component gui as keycloakGui
+    component rest as keycloakRest
+    database keycloak_db
+}
+node "administration tool" as adminTool {
+    component gui as adminGui
+    component rest as adminRest
+    database admin_db
+}
+
+node "example app" as exampleApp {
+    component gui as exampleGui
+    component rest as exampleRest
+    component auth_rest as exampleAuthRest
+}
+
+admin -- adminGui
+appUser -- exampleGui
+
+
+keycloakRest -- keycloak_db
+
+
+adminRest -- admin_db
+adminGui -right- adminRest
+adminRest - keycloakRest
+
+adminTool .. keycloakServer: use
+exampleApp .. keycloakServer: use
+adminRest - exampleAuthRest
+
+@enduml

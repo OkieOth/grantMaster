@@ -1,0 +1,62 @@
+apply plugin: 'java'
+
+sourceCompatibility = '1.7'
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+// NetBeans will automatically add "run" and "debug" tasks relying on the
+// "mainClass" property. You may however define the property prior executing
+// tasks by passing a "-PmainClass=<QUALIFIED_CLASS_NAME>" argument.
+//
+// Note however, that you may define your own "run" and "debug" task if you
+// prefer. In this case NetBeans will not add these tasks but you may rely on
+// your own implementation.
+if (!hasProperty('mainClass')) {
+    ext.mainClass = 'de.oth.keycloak.InitForGrantMaster'
+}
+
+
+
+repositories {
+    mavenCentral()
+    // You may define additional repositories, or even remove "mavenCentral()".
+    // Read more about repositories here:
+    //   http://www.gradle.org/docs/current/userguide/dependency_management.html#sec:repositories
+}
+
+dependencies {
+    testCompile 'junit:junit:4.10'
+    compile 'commons-cli:commons-cli:1.2'
+    compile 'org.slf4j:slf4j-api:1.7.5'
+    compile 'ch.qos.logback:logback-classic:1.0.9'
+    compile 'org.keycloak:keycloak-admin-client:1.9.4.Final'
+    compile 'org.jboss.resteasy:resteasy-client:3.0.15.Final'
+    compile 'org.jboss.resteasy:resteasy-jackson2-provider:3.0.15.Final'
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.6.3'
+}
+
+clean {
+    delete "${buildDir}/release"
+}
+
+task dependenciesToLibDir(type: Copy) {
+    into "$buildDir/release/lib"
+    from configurations.runtime
+}
+
+task buildRelease (type: Copy) {
+    into "${buildDir}/release/lib"
+    from "${buildDir}/libs"
+    
+    copy {
+        from "${project.rootDir}/src/main/bin"
+        into "${buildDir}/release"
+        include 'InitForGrantMaster.sh'
+    } 
+    copy {
+        from "${project.rootDir}/src/main/conf"
+        into "${buildDir}/release/conf"
+    }
+}
+
+dependenciesToLibDir.dependsOn jar
+buildRelease.dependsOn dependenciesToLibDir

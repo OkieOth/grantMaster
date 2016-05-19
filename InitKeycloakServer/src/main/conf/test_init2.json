@@ -1,0 +1,89 @@
+{
+    "realms": [{
+             "name":         "grantMaster",
+            "realmRoles":   ["grantMaster"],
+            "apps":  [{
+                "name": "grantmaster",
+                "redirectUrls": [
+                    "gm/*"],
+                "appRoles": [ "view","edit","admin" ]
+                }],
+            "userGroups": [ {
+                    "name": "GrantMaster user",
+                    "realmRoles":   ["grantMaster"],
+                    "appRoles": [{
+                    "app":  "grantmaster",  
+                    "role": "edit"}]
+                },
+                {
+                    "name": "GrantMaster admin",
+                    "realmRoles":   ["grantMaster"],
+                    "appRoles": [{
+                    "app":  "grantmaster",  
+                    "role": "admin"}]
+                }],
+            "users": [{
+                "login":        "test",
+                "password":     "geheim",
+                "email":        "test@test.com",
+                "name":         "Mein Name",
+                "userGroup":   "GrantMaster user"
+                },
+                {
+                "login":        "test2",
+                "password":     "geheim",
+                "email":        "test@test.com",
+                "name":         "Mein Name2",
+                "userGroup":   "GrantMaster admin"
+                }]
+        },
+       {
+            "name":         "keycloakTest",
+            "realmRoles":   ["demo1","demo2"],
+            "apps":  [{
+                "name": "demo1",
+                "redirectUrls": [
+                    "/demo1/*"],
+                "appRoles": [ "view","edit","admin" ]
+                },
+                {
+                "name": "demo2",
+                "redirectUrls": [
+                    "/demo2/*"],
+                "appRoles": [ "view","edit","admin" ]
+                }],
+            "userGroups": [ {
+                    "name": "demo1 group",
+                    "realmRoles":   ["demo1","demo2"],
+                    "appRoles": [{
+                        "app":  "demo1",  
+                        "role": "admin"},
+                        {
+                        "app":  "demo2",  
+                        "role": "view"}]
+                },
+                {
+                    "name": "demo2 group",
+                    "realmRoles":   ["demo2"],
+                    "appRoles": [{
+                        "app":  "demo2",  
+                        "role": "admin"}]
+                    }]
+                }],
+            "users": [{
+                "login":        "demo_user1",
+                "password":     "geheim",
+                "email":        "test@test.com",
+                "name":         "Demo User1",
+                "userGroup":    "demo1 group"
+                },
+                {
+                "login":        "demo_user2",
+                "password":     "geheim",
+                "email":        "test@test.com",
+                "name":         "Demo User2",
+                "userGroup":    "demo2 group"
+                }]
+        }
+    ]   
+}
