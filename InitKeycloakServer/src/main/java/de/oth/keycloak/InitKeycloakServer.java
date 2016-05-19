@@ -171,6 +171,9 @@ public class InitKeycloakServer {
                         change = true;
                     }
                 }
+                if (change) {
+                    rRes.clients().get(cRep.getId()).update(cRep);
+                }
             }
         }
     }
@@ -203,6 +206,8 @@ public class InitKeycloakServer {
             }
             Keycloak keycloak = (secret==null) ? Keycloak.getInstance(server,realm,user,pwd,clientStr) :
                 Keycloak.getInstance(server,realm,user,pwd,clientStr,secret);
+    
+
             
             ObjectMapper mapper = new ObjectMapper();
             RealmsConfig realmsConfig = mapper.readValue(initFile, RealmsConfig.class);
