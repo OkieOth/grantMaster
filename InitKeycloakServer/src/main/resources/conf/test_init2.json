@@ -68,8 +68,7 @@
                     "appRoles": [{
                         "app":  "demo2",  
                         "role": "admin"}]
-                    }]
-                }],
+                    }],
             "users": [{
                 "login":        "demo_user1",
                 "password":     "geheim",

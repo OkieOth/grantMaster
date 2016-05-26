@@ -11,7 +11,7 @@ sourceCompatibility = '1.7'
 // prefer. In this case NetBeans will not add these tasks but you may rely on
 // your own implementation.
 if (!hasProperty('mainClass')) {
-    ext.mainClass = 'de.oth.keycloak.InitForGrantMaster'
+    ext.mainClass = 'de.oth.keycloak.InitKeycloakServer'
 }
 
 
@@ -56,6 +56,18 @@ task buildRelease (type: Copy) {
         from "${project.rootDir}/src/main/conf"
         into "${buildDir}/release/conf"
     }
+}
+
+task myRun (type: JavaExec, dependsOn: classes){
+    if(project.hasProperty('myArgs')){
+        args(myArgs.split(','))
+    }
+    if (project.hasProperty('DEBUG')) {
+        jvmArgs '-Xdebug',
+            '-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=9009'
+    }
+    main = "de.oth.keycloak.InitKeycloakServer"
+    classpath = sourceSets.main.runtimeClasspath
 }
 
 dependenciesToLibDir.dependsOn jar

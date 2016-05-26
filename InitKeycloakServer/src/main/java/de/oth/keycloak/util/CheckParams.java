@@ -94,7 +94,7 @@ public class CheckParams {
         options.addOption(createOption(CONF_USER, "user", true, "user used to login in keycloak server", true));
         options.addOption(createOption(CONF_PWD, "password", true, "password for keycloak user", true));
         options.addOption(createOption(CONF_SERVER, "keycloak", true, "URL to keycloak server", true));
-        options.addOption(createOption(CONF_REALM, "realm", true, "Realm for the connection, if not given then 'master'", true));
+        options.addOption(createOption(CONF_REALM, "realm", true, "Realm for the connection, if not given then 'master'", false));
         options.addOption(createOption(CONF_CLIENT, "client", true, "client used for the connection, if not given then 'admin-cli'", false));
         options.addOption(createOption(CONF_SECRET, "secret", true, "Client secret if 'confidential' connection used", false));
         options.addOption(createOption(CONF_INITFILE, "initfile", true, "init file to set up basic realms an stuff", true));

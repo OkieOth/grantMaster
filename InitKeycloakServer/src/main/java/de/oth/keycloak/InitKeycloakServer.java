@@ -22,9 +22,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import de.oth.keycloak.util.CheckParams;
 import java.io.File;
+import java.net.URL;
 import java.util.List;
 
 import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.ClientsResource;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.RealmsResource;
 import org.keycloak.representations.idm.ClientRepresentation;
@@ -36,27 +38,44 @@ import org.keycloak.representations.idm.RealmRepresentation;
  * @author eiko
  */
 public class InitKeycloakServer {
+
+    /**
+     * a helper function that currently queries the realm. If it doesn't exist
+     * it catches a exception ... all other ideas don't work :-/
+     * @param rr
+     * @return 
+     */
+    private static boolean doesRealmExist(RealmResource rr) {
+        try {
+            rr.clients().findAll();
+            return true;
+        }
+        catch(Exception e) {
+            return false;
+        }
+    }
+    
     private static void addRealm(Keycloak keycloak,RealmConfig realmConf) {
-        RealmsResource realmsResource = keycloak.realms();
         String realmName = realmConf.getName();
         if (realmName==null) {
             log.error("realm name is null");
         }
-        RealmResource rRes = realmsResource.realm(realmName);
-        if ( rRes == null) {
+        RealmResource rRes = keycloak.realm(realmName);
+        if ( !doesRealmExist(rRes) ) { // TODO don't work ... need to be replaced by a checkFunction!
             RealmRepresentation rr = new RealmRepresentation();
             rr.setId(realmName);
             rr.setRealm(realmName);
             rr.setEnabled(Boolean.TRUE);
             keycloak.realms().create(rr);            
-            rRes = realmsResource.realm(realmName);
+            rRes = keycloak.realm(realmName);
             if (rRes==null) {
                 log.error ("can't retrieve created realm: "+realmName);
                 return;
             }
         }
-        else
+        else {
             log.info("realm '"+realmName+"' already exists");
+        }
         if (log.isInfoEnabled()) {
             log.info("realm '"+realmName+"' init realm roles ...");
         }
@@ -106,8 +125,17 @@ public class InitKeycloakServer {
         }
         for (AppConfig app:appList) {
             String name = app.getName();
-            List<ClientRepresentation> clientList = rRes.clients().findByClientId(name);
-            ClientRepresentation cRep = clientList!=null && (!clientList.isEmpty()) ? clientList.get(0) : null;
+            
+            ClientsResource clientsResource = rRes.clients();
+            List<ClientRepresentation> clientList = clientsResource.findAll();
+            ClientRepresentation cRep = null;
+            for (ClientRepresentation aktCRep:clientList) {
+                String aktName = aktCRep.getName();
+                if (aktName != null && aktName.equals(name)) {
+                    cRep = aktCRep;
+                    break;
+                }
+            }
             if (cRep==null) {
                 cRep = new ClientRepresentation();
                 cRep.setEnabled(Boolean.TRUE);
@@ -201,8 +229,18 @@ public class InitKeycloakServer {
             String initFileStr = checkParams.getInitFile();
             File initFile = new File(initFileStr);
             if (!initFile.isFile()) {
-                log.error("init file does not exist: "+initFile);
-                System.exit(1);
+                URL url = InitKeycloakServer.class.getClassLoader().getResource(initFileStr);
+                if (url!=null) {
+                    initFile = new File (url.getFile());
+                    if (!initFile.isFile()) {
+                        log.error("init file does not exist: "+initFile);
+                        System.exit(1);                        
+                    }
+                }
+                else {
+                    log.error("init file does not exist: "+initFile);
+                    System.exit(1);
+                }
             }
             Keycloak keycloak = (secret==null) ? Keycloak.getInstance(server,realm,user,pwd,clientStr) :
                 Keycloak.getInstance(server,realm,user,pwd,clientStr,secret);
