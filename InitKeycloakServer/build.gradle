@@ -28,7 +28,7 @@ dependencies {
     compile 'commons-cli:commons-cli:1.2'
     compile 'org.slf4j:slf4j-api:1.7.5'
     compile 'ch.qos.logback:logback-classic:1.0.9'
-    compile 'org.keycloak:keycloak-admin-client:1.9.4.Final'
+    compile 'org.keycloak:keycloak-admin-client:1.9.5.Final'
     compile 'org.jboss.resteasy:resteasy-client:3.0.15.Final'
     compile 'org.jboss.resteasy:resteasy-jackson2-provider:3.0.15.Final'
     compile 'com.fasterxml.jackson.core:jackson-databind:2.6.3'

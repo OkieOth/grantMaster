@@ -1,6 +1,6 @@
 sudo apt-get update
 
-if [ ! -f /usr/bin/screen ]; then
+if [ ! -f /usr/bin/xsltproc ]; then
   sudo apt-get install -y apache2 curl unzip screen tofrodos xsltproc
 fi
 

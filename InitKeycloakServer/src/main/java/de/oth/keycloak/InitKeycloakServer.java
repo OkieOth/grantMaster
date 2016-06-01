@@ -14,6 +14,7 @@ package de.oth.keycloak;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.oth.keycloak.json.AppConfig;
+import de.oth.keycloak.json.AppRoleConfig;
 import de.oth.keycloak.json.RealmConfig;
 import de.oth.keycloak.json.RealmsConfig;
 import de.oth.keycloak.json.UserConfig;
@@ -22,15 +23,31 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import de.oth.keycloak.util.CheckParams;
 import java.io.File;
+import java.net.URI;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.Response.StatusType;
 
 import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.ClientResource;
 import org.keycloak.admin.client.resource.ClientsResource;
+import org.keycloak.admin.client.resource.GroupResource;
+import org.keycloak.admin.client.resource.GroupsResource;
 import org.keycloak.admin.client.resource.RealmResource;
-import org.keycloak.admin.client.resource.RealmsResource;
+import org.keycloak.admin.client.resource.RoleMappingResource;
+import org.keycloak.admin.client.resource.RoleResource;
+import org.keycloak.admin.client.resource.RoleScopeResource;
+import org.keycloak.admin.client.resource.RolesResource;
+import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.ClientRepresentation;
+import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
 
 
 /**
@@ -55,7 +72,28 @@ public class InitKeycloakServer {
         }
     }
     
-    private static void addRealm(Keycloak keycloak,RealmConfig realmConf) {
+
+    /**
+     * copy from original keycloak source 
+     * keycloak/testsuite/integration-arquillian/tests/base/src/test/java/org/keycloak/testsuite/admin/ApiUtil.java
+     * @param response
+     * @return 
+     */
+    public static String getCreatedId(Response response) {
+        URI location = response.getLocation();
+        if (!response.getStatusInfo().equals(Status.CREATED)) {
+            StatusType statusInfo = response.getStatusInfo();
+            throw new RuntimeException("Create method returned status " +
+                    statusInfo.getReasonPhrase() + " (Code: " + statusInfo.getStatusCode() + "); expected status: Created (201)");
+        }
+        if (location == null) {
+            return null;
+        }
+        String path = location.getPath();
+        return path.substring(path.lastIndexOf('/') + 1);
+    }
+
+    public static void addRealm(Keycloak keycloak,RealmConfig realmConf) {
         String realmName = realmConf.getName();
         if (realmName==null) {
             log.error("realm name is null");
@@ -99,15 +137,145 @@ public class InitKeycloakServer {
             log.info("no realm roles found");
             return;
         }        
-        // TODO
+        RolesResource rolesResource = rRes.roles();
+        List<RoleRepresentation> listRoleReps = rolesResource.list();
+        for (String role:roleList) {
+            boolean bFound = false;
+            for (RoleRepresentation roleRep:listRoleReps) {
+                if (role.equals(roleRep.getName())) {
+                    bFound = true;
+                    break;                    
+                }
+            }
+            if (!bFound) {
+                addRealmRole(rRes,role);
+            }
+        }
     }
 
-    private static void addUserGroups(Keycloak keycloak,RealmResource rRes,List<UserGroupConfig> roleList) {
-        if (roleList==null || roleList.isEmpty()) {
-            log.info("no realm roles found");
+    /**
+     * TODO maybe a description make sense
+     * @param rRes
+     * @param roleName 
+     */
+    private static void addRealmRole(RealmResource rRes,String roleName) {        
+        if (roleName==null) {
             return;
         }        
-        // TODO
+        RoleRepresentation rr = new RoleRepresentation();
+        rr.setName(roleName);
+        rRes.roles().create(rr);
+    }
+
+    private static void addUserGroups(Keycloak keycloak,RealmResource rRes,List<UserGroupConfig> userGroupList) {
+        if (userGroupList==null || userGroupList.isEmpty()) {
+            log.info("no realm user groups found");
+            return;
+        }        
+        for (UserGroupConfig userGroup:userGroupList) {
+            String name = userGroup.getName();
+            boolean bFound = false;
+            GroupsResource groupsResource = rRes.groups();
+            List<GroupRepresentation> groupsList = groupsResource.groups();
+            for (GroupRepresentation groupRep:groupsList) {
+                if (name.equals(groupRep.getName())) {
+                    String groupId = groupRep.getId();
+                    // group found
+                    // check for realm roles
+                    List<String> realmRoleList = userGroup.getRealmRoles();
+                    GroupResource groupResource = groupsResource.group(groupId);
+                    for (String realmRole:realmRoleList) {
+                        RoleScopeResource roleScopeResource = groupResource.roles().realmLevel();
+                        List<RoleRepresentation> rRepList = roleScopeResource.listAll();
+                        boolean bFound2=false;
+                        for (RoleRepresentation rRep:rRepList) {
+                            if (realmRole.equals(rRep.getName())) {
+                                bFound2=true;
+                                break;
+                            }
+                        }
+                        if (!bFound2) {
+                            rRepList.add(rRes.roles().get(realmRole).toRepresentation());
+                            roleScopeResource.add(rRepList);
+                        }
+                    }
+                    // check for client roles
+                    List<AppRoleConfig> appRoleList = userGroup.getAppRoles();
+                    ClientsResource clientsRes = rRes.clients();
+                    List<ClientRepresentation> cRepList = clientsRes.findAll();
+                    for (AppRoleConfig appRole:appRoleList) {
+                        String appName = appRole.getApp();
+                        String roleName = appRole.getRole();
+                        for (ClientRepresentation cRep:cRepList) {
+                            if (appName.equals(cRep.getName())) {                                
+                                // test if there is already the role assigned to the group
+                                String clientId = cRep.getId();
+                                RoleScopeResource roleScopeResource = groupResource.roles().clientLevel(clientId);
+                                List<RoleRepresentation> rRepList = roleScopeResource.listAll();
+                                boolean bFound2=false;
+                                for (RoleRepresentation rRep:rRepList) {
+                                    if (roleName.equals(rRep.getName())) {
+                                        bFound2=true;
+                                        break;
+                                    }
+                                }
+                                if (!bFound2) {
+                                    ClientResource cRes = clientsRes.get(clientId);
+                                    RolesResource rolesRes = cRes.roles();                                
+                                    RoleResource roleRes = rolesRes.get(roleName);
+                                    List<RoleRepresentation> l2 = new ArrayList();
+                                    l2.add(roleRes.toRepresentation());                            
+                                    RoleMappingResource roleMappingResource = rRes.groups().group(groupId).roles();
+                                    roleMappingResource.clientLevel(cRep.getId()).add(l2);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    
+                    bFound = true;
+                    break;
+                }                
+            }
+            if (!bFound) {
+                // add a new user Group
+                GroupRepresentation gr = new GroupRepresentation();
+                gr.setName(name);
+                Response response = rRes.groups().add(gr);         
+                String groupId = getCreatedId(response);
+                List<String> realmRoleList = userGroup.getRealmRoles();
+                List<RoleRepresentation> l = new ArrayList();
+                for (String role:realmRoleList) {
+                    l.add(rRes.roles().get(role).toRepresentation());
+                }
+                if (!l.isEmpty()) {
+                    RoleMappingResource roleMappingResource = rRes.groups().group(groupId).roles();
+                    roleMappingResource.realmLevel().add(l);
+
+                }
+                
+                List<AppRoleConfig> appRoleList = userGroup.getAppRoles();
+                ClientsResource clientsRes = rRes.clients();
+                List<ClientRepresentation> cRepList = clientsRes.findAll();
+                for (AppRoleConfig appRole:appRoleList) {
+                    // ClientRole ermitteln
+                    String appName = appRole.getApp();
+                    String roleName = appRole.getRole();
+                    for (ClientRepresentation cRep:cRepList) {
+                        if (appName.equals(cRep.getName())) {
+                            ClientResource cRes = clientsRes.get(cRep.getId());
+                            RolesResource rolesRes = cRes.roles();
+                            RoleResource roleRes = rolesRes.get(roleName);
+                            List<RoleRepresentation> l2 = new ArrayList();
+                            l2.add(roleRes.toRepresentation());                            
+                            RoleMappingResource roleMappingResource = rRes.groups().group(groupId).roles();
+                            roleMappingResource.clientLevel(cRep.getId()).add(l2);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
     }
     
     private static String[] list2array(List<String> list) {
@@ -140,12 +308,12 @@ public class InitKeycloakServer {
                 cRep = new ClientRepresentation();
                 cRep.setEnabled(Boolean.TRUE);
                 cRep.setClientId(name);
+                cRep.setName(name);
                 cRep.setRedirectUris(app.getRedirectUrls());
                 List<String> appRoles = app.getAppRoles();
                 if (appRoles!=null && (!appRoles.isEmpty()))
                     cRep.setDefaultRoles(list2array(appRoles));
                 rRes.clients().create(cRep);
-                
             }
             else {
                 if (log.isInfoEnabled()) {
@@ -211,7 +379,51 @@ public class InitKeycloakServer {
             log.info("no user found");
             return;
         }
-        // TODO
+        UsersResource usersResource = rRes.users();
+        List<UserRepresentation> aktUserList = usersResource.search(null,null,null);
+        for (UserConfig userConfig:userList) {            
+            String login = userConfig.getLogin();
+            boolean bFound = false;
+            for (UserRepresentation userRep:aktUserList) {
+                if (login.equals(userRep.getUsername())) {
+                    bFound = true;
+                    // todo check user group
+                    break;
+                }
+            }
+            if (!bFound) {
+                UserRepresentation userRep = new UserRepresentation();
+                userRep.setLastName(userConfig.getLastName());
+                userRep.setFirstName(userConfig.getFirstName());
+                // if Email is used then the value needs to be unique :-/ v.1.9.4.Final
+//                userRep.setEmail(userConfig.getEmail());
+                userRep.setEnabled(true);
+                userRep.setUsername(userConfig.getLogin());
+                List<CredentialRepresentation> credentialList = new ArrayList();
+                CredentialRepresentation credRep = new CredentialRepresentation();
+                credRep.setValue(userConfig.getPassword());
+                credRep.setTemporary(Boolean.FALSE);
+                credentialList.add(credRep);
+                userRep.setCredentials(credentialList);
+                // todo - save user group
+/*
+                List<String> userGroupList = new ArrayList();
+                userGroupList.add(userConfig.getUserGroup());
+                userRep.setGroups(userGroupList);
+*/
+                Response response = rRes.users().create(userRep);
+/*
+                if (response.getStatus()==201) {
+                    List<UserRepresentation> uList = usersResource.search(userConfig.getFirstName(),userConfig.getLastName(),null,null,null,null);
+                    if (!uList.isEmpty()) {
+                        UserRepresentation ur = uList.get(0);
+                        ur.setGroups(userGroupList);
+                    }
+                }
+*/
+                log.info("response state of add user: "+response.getStatus());
+            }
+        }
     }
     
     public static void main(String[] args) {

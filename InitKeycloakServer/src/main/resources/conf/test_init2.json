@@ -26,14 +26,16 @@
                 "login":        "test",
                 "password":     "geheim",
                 "email":        "test@test.com",
-                "name":         "Mein Name",
+                "lastName":         "Simpson",
+                "firstName":         "Homer",
                 "userGroup":   "GrantMaster user"
                 },
                 {
                 "login":        "test2",
                 "password":     "geheim",
                 "email":        "test@test.com",
-                "name":         "Mein Name2",
+                "lastName":         "Simpson",
+                "firstName":         "Marge",
                 "userGroup":   "GrantMaster admin"
                 }]
         },
@@ -73,14 +75,16 @@
                 "login":        "demo_user1",
                 "password":     "geheim",
                 "email":        "test@test.com",
-                "name":         "Demo User1",
+                "lastName":         "Wayne",
+                "firstName":         "Bruce",
                 "userGroup":    "demo1 group"
                 },
                 {
                 "login":        "demo_user2",
                 "password":     "geheim",
                 "email":        "test@test.com",
-                "name":         "Demo User2",
+                "lastName":         "Parker",
+                "firstName":         "Peter",
                 "userGroup":    "demo2 group"
                 }]
         }

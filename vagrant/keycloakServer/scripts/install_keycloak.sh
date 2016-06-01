@@ -6,15 +6,59 @@ packageBase=/opt/downloads
 
 defUser=vagrant
 
+# create a helper script to later modify the keycloak configuration
+if ! [ -d /home/vagrant/scripts ]; then
+	mkdir /home/vagrant/scripts
+	cat << EOFX > /home/vagrant/scripts/setDbParams.xsl
+<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+	xmlns="urn:jboss:domain:4.0"
+	xmlns:ds="urn:jboss:domain:datasources:4.0">
+	<xsl:output method="xml" indent="yes"/> 
+	<xsl:template match="ds:datasources">
+		<xsl:copy>
+			<xsl:apply-templates select="@*"/>
+			<ds:datasource jndi-name="java:jboss/datasources/MyKeycloakDS" pool-name="MyKeycloakDS" enabled="true" use-java-context="true">
+			    <ds:connection-url>jdbc:postgresql:keycloak_db</ds:connection-url>
+			    <ds:driver>psql</ds:driver>
+			    <ds:security>
+				<ds:user-name>keycloak_db</ds:user-name>
+				<ds:password>keycloakDb999</ds:password>
+			    </ds:security>
+			</ds:datasource>
+			<xsl:apply-templates select="*"/>
+		</xsl:copy>
+	</xsl:template>
+	<xsl:template match="ds:drivers">
+		<xsl:apply-templates select="@*"/>
+                    <ds:driver name="psql" module="org.postgresql">
+                        <ds:xa-datasource-class>org.postgresql.Driver</ds:xa-datasource-class>
+                    </ds:driver>
+		<xsl:apply-templates select="*"/>
+	</xsl:template>
+	<xsl:template match="text()">
+		<xsl:value-of select="normalize-space()"/>
+	</xsl:template>
+	<!-- umkopieren der restlichen Zeilen -->
+	<xsl:template match="*|@*|comment()|processing-instruction()">
+		<xsl:copy>
+			<xsl:apply-templates select="*|@*|text()|comment()|processing-instruction()"/>
+		</xsl:copy>
+	</xsl:template>
+</xsl:stylesheet>
+EOFX
+fi
+
 # step 1: Installation des Servers
 if ! [ -L /opt/keycloak ]; then
 	sudo chown -R $defUser /opt
-	instArchiv='keycloak-1.9.4.Final.tar.gz'
+	instArchiv='keycloak-1.9.5.Final.tar.gz'
 	if ! cp "$packageBase/$instArchiv" /opt; then exit 1; fi
 	cd /opt
 	if ! tar -xzf "$instArchiv"; then exit 1; fi
 	if ! rm -f "$instArchiv"; then exit 1; fi
 	if ! ls -d keycloak* | xargs bash -c 'ln -s $0 keycloak'; then exit 1; fi
+	sudo chown -R vagrant:vagrant /opt/keycloak*
 fi
 
 
@@ -88,7 +132,7 @@ BACKUP_EXT=oth.bak
 CONFIG_FILE="/opt/keycloak/standalone/configuration/standalone.xml"
 if ! [ -f "$CONFIG_FILE.$BACKUP_EXT" ]; then
 	mv "$CONFIG_FILE" "$CONFIG_FILE.$BACKUP_EXT"
-	xsltproc /vagrant/scripts/setDbParams.xsl "$CONFIG_FILE.$BACKUP_EXT" > "$CONFIG_FILE"
+	xsltproc /home/vagrant/scripts/setDbParams.xsl "$CONFIG_FILE.$BACKUP_EXT" > "$CONFIG_FILE"
 fi
 
 # Die Postgresql-Connection für Keycloak aktivieren
@@ -110,8 +154,6 @@ else
 	fi
 fi
 
-if ! netstat -nat | grep 8080
-then
-	/etc/rc.local &
-fi 
+sudo reboot
+
 

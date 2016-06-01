@@ -1,40 +1,51 @@
 {
     "realms": [{
             "name":         "grantMaster",
-            "realmRoles":   ["grantMaster"],
+            "realmRoles":   ["grantMasterGui","komplettNeu"],
             "apps":  [{
-                "name": "grantmaster",
+                "name": "grantMasterGui",
                 "redirectUrls": [
                     "gm/*"],
                 "appRoles": [ "view","edit","admin" ]
-                }],
-            "userGroups": [ {
-                    "name": "GrantMaster user",
-                    "realmRoles":   ["grantMaster"],
-                    "appRoles": [{
-                    "app":  "grantmaster",  
-                    "role": "edit"}]
                 },
                 {
-                    "name": "GrantMaster admin",
-                    "realmRoles":   ["grantMaster"],
+                "name": "grantMasterGui2",
+                "redirectUrls": [
+                    "gm2/*"],
+                "appRoles": [ "x_view","x_edit","x_admin" ]
+                }],
+            "userGroups": [ {
+                    "name": "grantMaster_user",
+                    "realmRoles":   ["grantMasterGui","komplettNeu"],
                     "appRoles": [{
-                    "app":  "grantmaster",  
+                    "app":  "grantMasterGui",
+                    "role": "edit"},
+                    {
+                    "app":  "grantMasterGui2",
+                    "role": "x_admin"}]
+                },
+                {
+                    "name": "grantMaster_admin",
+                    "realmRoles":   ["grantMasterGui"],
+                    "appRoles": [{
+                    "app":  "grantMasterGui",  
                     "role": "admin"}]
                 }],
             "users": [{
                 "login":        "test",
                 "password":     "geheim",
                 "email":        "test@test.com",
-                "name":         "Mein Name",
-                "userGroup":   "GrantMaster user"
+                "lastName":         "Simpson",
+                "firstName":         "Homer",
+                "userGroup":   "grantMaster_user"
                 },
                 {
-                "login":        "test2",
+                "login":        "test_b",
                 "password":     "geheim",
                 "email":        "test@test.com",
-                "name":         "Mein Name2",
-                "userGroup":   "GrantMaster admin"
+                "lastName":         "Simpson",
+                "firstName":         "Maggy",
+                "userGroup":   "grantMaster_admin"
                 }]
         }
     ]   
