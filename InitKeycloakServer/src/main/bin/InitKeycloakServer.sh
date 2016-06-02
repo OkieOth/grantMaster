@@ -54,5 +54,5 @@ do
   args="$args \"$arg\""
 done
 
-exec_command="exec \"$JAVACMD\" -cp \"$TESTADMINCON_HOME/lib/*\" \"-Dlogback.configurationFile=$TESTADMINCON_HOME/conf/logback.xml\" de.oth.keycloak.InitForGrantMaster"
+exec_command="exec \"$JAVACMD\" -cp \"$TESTADMINCON_HOME/lib/*\" \"-Dlogback.configurationFile=$TESTADMINCON_HOME/conf/logback.xml\" de.oth.keycloak.InitKeycloakServer"
 eval $exec_command $args

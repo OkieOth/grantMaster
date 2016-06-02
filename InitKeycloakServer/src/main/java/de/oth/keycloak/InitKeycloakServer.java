@@ -383,11 +383,23 @@ public class InitKeycloakServer {
         List<UserRepresentation> aktUserList = usersResource.search(null,null,null);
         for (UserConfig userConfig:userList) {            
             String login = userConfig.getLogin();
+            String groupName = userConfig.getUserGroup();
             boolean bFound = false;
             for (UserRepresentation userRep:aktUserList) {
                 if (login.equals(userRep.getUsername())) {
                     bFound = true;
-                    // todo check user group
+                    // check assigned user group
+                    boolean groupFound=false;
+                    List<String> aktGroups = userRep.getGroups();
+                    if (aktGroups==null || (!aktGroups.contains(groupName))) {
+                        List<GroupRepresentation> groupList = rRes.groups().groups();
+                        for (GroupRepresentation group:groupList) {
+                            if (group.getName().equals(groupName)) {
+                                rRes.users().get(userRep.getId()).joinGroup(group.getId());
+                                break;
+                            }
+                        }                        
+                    }
                     break;
                 }
             }
@@ -399,29 +411,20 @@ public class InitKeycloakServer {
 //                userRep.setEmail(userConfig.getEmail());
                 userRep.setEnabled(true);
                 userRep.setUsername(userConfig.getLogin());
-                List<CredentialRepresentation> credentialList = new ArrayList();
+                Response response = rRes.users().create(userRep);
+                String userId = getCreatedId(response);
                 CredentialRepresentation credRep = new CredentialRepresentation();
                 credRep.setValue(userConfig.getPassword());
+                credRep.setType(CredentialRepresentation.PASSWORD);
                 credRep.setTemporary(Boolean.FALSE);
-                credentialList.add(credRep);
-                userRep.setCredentials(credentialList);
-                // todo - save user group
-/*
-                List<String> userGroupList = new ArrayList();
-                userGroupList.add(userConfig.getUserGroup());
-                userRep.setGroups(userGroupList);
-*/
-                Response response = rRes.users().create(userRep);
-/*
-                if (response.getStatus()==201) {
-                    List<UserRepresentation> uList = usersResource.search(userConfig.getFirstName(),userConfig.getLastName(),null,null,null,null);
-                    if (!uList.isEmpty()) {
-                        UserRepresentation ur = uList.get(0);
-                        ur.setGroups(userGroupList);
+                rRes.users().get(userId).resetPassword(credRep);
+                List<GroupRepresentation> groupList = rRes.groups().groups();
+                for (GroupRepresentation group:groupList) {
+                    if (group.getName().equals(groupName)) {
+                        rRes.users().get(userId).joinGroup(group.getId());
+                        break;
                     }
                 }
-*/
-                log.info("response state of add user: "+response.getStatus());
             }
         }
     }
