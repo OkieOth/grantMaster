@@ -78,6 +78,17 @@ public class KeycloakAccess {
         return rRes;
     }
 
+    public static List<String> getRealmRoleNames(RealmResource rRes) {
+        List<String> aktRoles = new ArrayList();        
+        RolesResource rolesResource = rRes.roles();
+        List<RoleRepresentation> listRoleReps = rolesResource.list();
+        for (RoleRepresentation rRep:listRoleReps) {
+            String name = rRep.getName();
+            if (name.equals("offline_access")) continue; //  not needed so it's ignored
+            aktRoles.add(rRep.getName());
+        }        
+        return aktRoles;
+    }
     public static void addMissedRealmRoles(RealmResource rRes, List<String> roleList) {
         if (roleList == null || roleList.isEmpty()) {
             return;

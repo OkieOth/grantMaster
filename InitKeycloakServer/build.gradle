@@ -72,3 +72,47 @@ task myRun (type: JavaExec, dependsOn: classes){
 
 dependenciesToLibDir.dependsOn jar
 buildRelease.dependsOn dependenciesToLibDir
+
+configurations {
+    integrationTestCompile.extendsFrom testCompile
+    integrationTestRuntime.extendsFrom testRuntime
+}
+
+sourceSets {
+    integrationTest {
+        java {
+            compileClasspath += main.output + test.output
+            runtimeClasspath += main.output + test.output
+            srcDir file('src/test/java')
+        }
+        resources.srcDir file('src/test/resources')
+    }
+}
+
+task integrationTest(type: Test) {
+    doFirst {
+        // that's the place to start the test vagrant machine        
+        println 'before integration tests - ' + new Date().getTime()
+        "${project.rootDir}/src/test/scripts/startVagrant.sh".execute().in.eachLine {
+            println it
+        }
+        println 'vm started'
+    }
+    
+    doLast {
+        // that's the place to start the test vagrant machine
+        def sout = new StringBuffer()
+        def serr = new StringBuffer()
+        def proc = "${project.rootDir}/src/test/scripts/stopVagrant.sh".execute()
+        proc.consumeProcessOutput(sout,serr)
+        proc.waitForOrKill(20000)
+        println "out: $sout \n err: $serr"
+        println 'after integration tests - ' + new Date().getTime()
+    }
+    testClassesDir = sourceSets.integrationTest.output.classesDir
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    outputs.upToDateWhen { false }
+}
+
+check.dependsOn integrationTest
+integrationTest.mustRunAfter test
