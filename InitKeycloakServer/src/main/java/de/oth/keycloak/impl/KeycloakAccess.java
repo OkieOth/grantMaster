@@ -130,6 +130,13 @@ public class KeycloakAccess {
         return rRes.groups().group(groupId);
     }
 
+    // TODO - Test - 1
+    public static List<RoleRepresentation> getGroupRealmRoles(RealmResource rRes, GroupResource groupResource) {
+        RoleScopeResource roleScopeResource = groupResource.roles().realmLevel();
+        return roleScopeResource.listAll();
+    }
+    
+    // TODO - Test - 1
     public static void addMissedGroupRealmRoles(RealmResource rRes, GroupResource groupResource, List<String> realmRoleList) {
         boolean changed = false;
         RoleScopeResource roleScopeResource = groupResource.roles().realmLevel();
@@ -152,6 +159,19 @@ public class KeycloakAccess {
         }
     }
 
+    // TODO - Test - 2
+    public static List<RoleRepresentation> getGroupClientRole(RealmResource rRes, GroupResource groupResource, String clientName) {
+        RoleScopeResource roleScopeResource = groupResource.roles().clientLevel(clientName);
+        List<RoleRepresentation> rRepList = null;
+        try {
+            return roleScopeResource.listAll();
+        }
+        catch (javax.ws.rs.NotFoundException e) {
+            return new ArrayList();
+        }
+    }
+    
+    // TODO - Test - 2
     public static void addMissedGroupClientRole(RealmResource rRes, GroupResource groupResource, String clientName, String roleName) {
         RoleScopeResource roleScopeResource = groupResource.roles().clientLevel(clientName);
         List<RoleRepresentation> rRepList = null;
@@ -207,6 +227,23 @@ public class KeycloakAccess {
         return null;
     }
 
+    public static ClientResource addClientToRealm(RealmResource rRes, String clientName,
+            List<String> redirectUrls, List<String> clientRoles) {
+        ClientRepresentation cRep = new ClientRepresentation();
+        cRep.setEnabled(Boolean.TRUE);
+        cRep.setClientId(clientName);
+        cRep.setName(clientName);
+        if (redirectUrls != null && (!redirectUrls.isEmpty())) {
+            cRep.setRedirectUris(redirectUrls);
+        }
+        if (clientRoles != null && (!clientRoles.isEmpty())) {
+            cRep.setDefaultRoles(list2array(clientRoles));
+        }
+        Response response = rRes.clients().create(cRep);
+        String clientId = getCreatedId(response);
+        return rRes.clients().get(clientId);
+    }
+
     public static UserResource getUserFromRealm(RealmResource rRes, String firstName, String lastName, String login) {
         UsersResource usersRes = rRes.users();
         List<UserRepresentation> userList = usersRes.search(login, null, null);
@@ -247,23 +284,6 @@ public class KeycloakAccess {
         credRep.setType(CredentialRepresentation.PASSWORD);
         credRep.setTemporary(Boolean.FALSE);
         rRes.users().get(userRes.toRepresentation().getId()).resetPassword(credRep);
-    }
-
-    public static ClientResource addClientToRealm(RealmResource rRes, String clientName,
-            List<String> redirectUrls, List<String> clientRoles) {
-        ClientRepresentation cRep = new ClientRepresentation();
-        cRep.setEnabled(Boolean.TRUE);
-        cRep.setClientId(clientName);
-        cRep.setName(clientName);
-        if (redirectUrls != null && (!redirectUrls.isEmpty())) {
-            cRep.setRedirectUris(redirectUrls);
-        }
-        if (clientRoles != null && (!clientRoles.isEmpty())) {
-            cRep.setDefaultRoles(list2array(clientRoles));
-        }
-        Response response = rRes.clients().create(cRep);
-        String clientId = getCreatedId(response);
-        return rRes.clients().get(clientId);
     }
 
     public static void addMissedRedirectUrls(RealmResource rRes, ClientResource clientResource, List<String> neededRedirectUriList) {

@@ -21,7 +21,9 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.GroupResource;
 import org.keycloak.admin.client.resource.RealmResource;
+import org.keycloak.representations.idm.RoleRepresentation;
 
 /**
  *
@@ -110,8 +112,16 @@ public class IT_Test {
             realmRoles.add("testRole1");
             KeycloakAccess.addMissedRealmRoles(rRes, realmRoles);
             aktRealmRoles = KeycloakAccess.getRealmRoleNames(rRes);
-            compareStringLists(realmRoles,aktRealmRoles);
-            // TODO
+            compareStringLists(realmRoles,aktRealmRoles,1);
+            // add again ... no changes in keycloak
+            KeycloakAccess.addMissedRealmRoles(rRes, realmRoles);
+            aktRealmRoles = KeycloakAccess.getRealmRoleNames(rRes);
+            compareStringLists(realmRoles,aktRealmRoles,1);
+
+            realmRoles.add(0,"testRole2");
+            KeycloakAccess.addMissedRealmRoles(rRes, realmRoles);
+            aktRealmRoles = KeycloakAccess.getRealmRoleNames(rRes);
+            compareStringLists(realmRoles,aktRealmRoles,2);
         }
         finally {
             if (rRes!=null) {
@@ -121,11 +131,104 @@ public class IT_Test {
             }
         }
     }
+    
+    @Test
+    public void testRealmGroups() {
+        String testRealm = "it_test4";
+        RealmResource rRes = KeycloakAccess.getRealm(keycloak, testRealm,true);
+        try {
+            assertNotNull(rRes);
+            String groupName="testGroup55";
+            GroupResource gRes = KeycloakAccess.getGroupFromRealm(rRes,groupName);
+            assertNull(gRes);
+            GroupResource gRes2 = KeycloakAccess.addGroupToRealm(rRes,groupName);
+            assertNotNull(gRes2);
+            gRes = KeycloakAccess.getGroupFromRealm(rRes,groupName);
+            assertNotNull(gRes);            
+        }
+        finally {
+            if (rRes!=null) {
+                rRes.remove();            
+                rRes = KeycloakAccess.getRealm(keycloak, testRealm,false);
+                assertNull(rRes);
+            }
+        }
+    }
+    
+    @Test
+    public void testGroupRealmRoles() {
+        String testRealm = "it_test5";
+        RealmResource rRes = KeycloakAccess.getRealm(keycloak, testRealm,true);
+        try {
+            assertNotNull(rRes);
+            String groupName="testGroup56";
+            GroupResource gRes = KeycloakAccess.getGroupFromRealm(rRes,groupName);
+            assertNull(gRes);
+            GroupResource gRes2 = KeycloakAccess.addGroupToRealm(rRes,groupName);
+            assertNotNull(gRes2);
+            List<RoleRepresentation> roleList = KeycloakAccess.getGroupRealmRoles(rRes,gRes2);
+            assertNotNull(roleList);
+            assertTrue(roleList.isEmpty());
+            
+            // add some realm roles
+            List<String> realmRoles = new ArrayList();
+            realmRoles.add("rRole1");
+            realmRoles.add("rRole3");
+            realmRoles.add("rRole4");
+            realmRoles.add("rRole2");
+            realmRoles.add("rRole5");
+            KeycloakAccess.addMissedRealmRoles(rRes, realmRoles);
+            List<String> existingRealmRoles = KeycloakAccess.getRealmRoleNames(rRes);
+            compareStringLists(realmRoles,existingRealmRoles,5);
+            
+            List<String> groupRoles = new ArrayList();
+            groupRoles.add("rRole4");
+            groupRoles.add("rRole2");
+            KeycloakAccess.addMissedGroupRealmRoles(rRes,gRes2,groupRoles);
+            roleList = KeycloakAccess.getGroupRealmRoles(rRes,gRes2);
+            assertNotNull(roleList);
+            compareStringListWithRoleRepresentationList(groupRoles,roleList,2);
+            KeycloakAccess.addMissedGroupRealmRoles(rRes,gRes2,groupRoles);
+            roleList = KeycloakAccess.getGroupRealmRoles(rRes,gRes2);
+            assertNotNull(roleList);
+            compareStringListWithRoleRepresentationList(groupRoles,roleList,2);
+            groupRoles.add("rRole1");
+            KeycloakAccess.addMissedGroupRealmRoles(rRes,gRes2,groupRoles);
+            roleList = KeycloakAccess.getGroupRealmRoles(rRes,gRes2);
+            assertNotNull(roleList);
+            compareStringListWithRoleRepresentationList(groupRoles,roleList,3);
+        }
+        finally {
+            if (rRes!=null) {
+                rRes.remove();            
+                rRes = KeycloakAccess.getRealm(keycloak, testRealm,false);
+                assertNull(rRes);
+            }
+        }        
+    }
 
-    public void compareStringLists(List<String> list1,List<String> list2) {
+    public void compareStringListWithRoleRepresentationList(List<String> desiredRoles,List<RoleRepresentation> receivedRoles,int expectedSize) {
+        assertNotNull(desiredRoles);
+        assertNotNull(receivedRoles);
+        assertEquals(receivedRoles.size(),desiredRoles.size());
+        assertEquals(expectedSize,receivedRoles.size());        
+        for (String s:desiredRoles) {
+            boolean found=false;
+            for (RoleRepresentation rRep:receivedRoles) {
+                if (s.equals(rRep.getName())) {
+                    found = true;
+                    break;
+                }
+            }
+            assertTrue(found);
+        }        
+    }
+
+    public void compareStringLists(List<String> list1,List<String> list2,int expectedSize) {
         assertNotNull(list1);
         assertNotNull(list2);
         assertEquals(list1.size(),list2.size());
+        assertEquals(expectedSize,list2.size());        
         for (String s:list1) {
             assertTrue(list2.contains(s));
         }
