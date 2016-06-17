@@ -2,7 +2,6 @@
 
 # Java 8 installieren
 
-# ATTENTION don't call in provision
 
 sudo add-apt-repository ppa:webupd8team/java -y
 sudo apt-get update
