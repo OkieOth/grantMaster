@@ -9,5 +9,6 @@ if [ ! -L /opt/gradle ]; then
   unzip gradle*.zip
   rm -f gradle*.zip
   ls -d gradle* | xargs bash -c 'ln -s $0 gradle'
+  sudo ln -s /opt/gradle/bin/gradle /usr/bin
 fi
 
