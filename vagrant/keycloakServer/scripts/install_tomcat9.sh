@@ -7,4 +7,5 @@ if [ ! -L /opt/tomcat9 ]; then
   unzip apache-tomcat*.zip
   rm -f apache-tomcat*.zip
   ls -d apache-tomcat-9* | xargs bash -c 'ln -s $0 tomcat9'
+  chmod u+x tomcat9/bin/*.sh
 fi

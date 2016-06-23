@@ -79,7 +79,7 @@ then
 	echo 'sudo iptables -A PREROUTING -t nat -i eth0 -p tcp --dport 8080 -j DNAT --to 127.0.0.1:8080' >> /etc/rc.local
 	echo 'sudo iptables -I FORWARD 1 -m state -p tcp -d 127.0.0.1 --dport 8080 --state NEW,ESTABLISHED,RELATED -j ACCEPT' >> /etc/rc.local
 	echo 'sudo sysctl -w net.ipv4.conf.eth0.route_localnet=1' >> /etc/rc.local
-	echo "sudo su $defUser -c /opt/bin/runKeycloakServer.sh" >> /etc/rc.local
+	echo "sudo su $defUser -c 'screen -S keycloak -d -m /opt/bin/runKeycloakServer.sh'" >> /etc/rc.local
 	sudo chmod 755 /etc/rc.local
 fi
 

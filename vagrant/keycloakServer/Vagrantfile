@@ -31,6 +31,7 @@ Vagrant.configure(2) do |config|
   config.vm.provision "shell", path: "scripts/install_tomcat8.sh"
 #  config.vm.provision "shell", path: "scripts/install_tomcat9.sh"
   config.vm.provision "shell", path: "scripts/install_keycloak.sh"
+  config.vm.provision "shell", path: "scripts/install_sampleApps.sh"
   config.vm.provision "shell", inline: $infoScript,
       run: "always"
 end
