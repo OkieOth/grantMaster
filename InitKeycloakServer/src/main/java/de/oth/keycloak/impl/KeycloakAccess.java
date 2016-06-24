@@ -60,7 +60,7 @@ public class KeycloakAccess {
             return false;
         }
     }
-
+      
     public static RealmResource getRealm(Keycloak keycloak, String realmName, boolean createNew) {
         RealmResource rRes = keycloak.realm(realmName);
         if (!KeycloakAccess.doesRealmExist(rRes)) { // TODO don't work ... need to be replaced by a checkFunction!

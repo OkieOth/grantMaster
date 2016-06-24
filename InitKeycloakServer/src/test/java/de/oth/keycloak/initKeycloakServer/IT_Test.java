@@ -30,26 +30,25 @@ import org.keycloak.representations.idm.RoleRepresentation;
  * @author eiko
  */
 public class IT_Test {
-    private final static String server = "http://localhost:8888/auth";
-    private final static String realm = "master";
-    private final static String user = "keycloak_admin";
-    private final static String pwd = "k6ycloakAdmin";
-    private final static String clientStr = "admin-cli";
+    public final static String SERVER = "http://localhost:8888/auth";
+    public final static String REALM = "master";
+    public final static String USER = "keycloak_admin";
+    public final static String PWD = "k6ycloakAdmin";
+    public final static String CLIENTSTR = "admin-cli";
     private static Keycloak keycloak;
     
     
     public IT_Test() {
     }
     
-    @BeforeClass
-    public static void setUpClass() {
-        keycloak = Keycloak.getInstance(server,realm,user,pwd,clientStr);
+    public static Keycloak initKeycloak(String server, String realm,String user,String pwd,String clientStr) {
+        Keycloak k = Keycloak.getInstance(server,realm,user,pwd,clientStr);
         // poll and wait for keycloak server is started
         RealmResource rRes = null;
         int count = 0;
         try {
             while(rRes==null && count < 100) {
-                rRes = KeycloakAccess.getRealm(keycloak, realm,false);
+                rRes = KeycloakAccess.getRealm(k, realm,false);
                 count++;
                 Thread.sleep(1000);
             }
@@ -57,7 +56,13 @@ public class IT_Test {
         }
         catch(Exception e) {
             e.printStackTrace();
-        }
+        }        
+        return k;
+    }
+    
+    @BeforeClass
+    public static void setUpClass() {
+        keycloak = initKeycloak(SERVER,REALM,USER,PWD,CLIENTSTR);
     }
     
     @AfterClass
